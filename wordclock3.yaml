@@ -1,0 +1,396 @@
+substitutions:
+  device_name: wordclock3
+  friendly_name: WordClock
+
+esphome:
+  name: ${device_name}
+
+esp32:
+  board: esp32-c6-devkitc-1
+
+wifi:
+  ssid: "Livebox-393A"
+  password: "D532953F3717A39E33123DEFFF"
+  power_save_mode: none
+  ap:
+    ssid: "${friendly_name} Setup"
+
+captive_portal:
+
+logger:
+  level: DEBUG
+
+api:
+  encryption:
+    key: "d1lGCVAQbplWidb8Xk3ulGkMMH0j0kZX44mD04EKLhk="
+
+ota:
+  - platform: esphome
+    password: "9696ae43528aa775a1f21be271c36cf8"
+
+web_server:
+  port: 80
+  local: true
+  version: 3
+
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: Europe/Paris
+    servers:
+      - 216.239.35.0
+      - 162.159.200.1
+      - europe.pool.ntp.org
+
+external_components:
+  - source:
+      type: local
+      path: external_components
+    components: [wordclock]
+
+i2c:
+  sda: GPIO3
+  scl: GPIO4
+  scan: true
+  id: bus_i2c
+
+uart:
+  tx_pin: GPIO19
+  rx_pin: GPIO20
+  baud_rate: 256000
+  parity: NONE
+  stop_bits: 1
+
+ld2410:
+
+# =============================================================================
+# LED Strip
+# =============================================================================
+light:
+  - platform: esp32_rmt_led_strip
+    rgb_order: GRB
+    pin: GPIO6
+    num_leds: 256
+    chipset: ws2812
+    name: "Affichage Matrice Interne"
+    id: led_strip
+    restore_mode: ALWAYS_OFF
+    internal: true
+
+  # --- Group: LEDS ---
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    light_type: hours
+    name: "Leds Heures"
+    id: wordclock_hours
+    restore_mode: RESTORE_DEFAULT_ON
+
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    light_type: minutes
+    name: "Leds Minutes"
+    id: wordclock_minutes
+    restore_mode: RESTORE_DEFAULT_ON
+
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    light_type: seconds
+    name: "Leds Secondes"
+    id: wordclock_seconds
+    restore_mode: RESTORE_DEFAULT_ON
+
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    light_type: background
+    name: "Leds Fond"
+    id: wordclock_background
+    restore_mode: RESTORE_DEFAULT_ON
+
+# =============================================================================
+# WordClock Component
+# =============================================================================
+wordclock:
+  id: my_wordclock
+  strip_id: led_strip
+  num_leds: 256
+  time_id: sntp_time
+
+# =============================================================================
+# Controls
+# =============================================================================
+switch:
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    name: "Alimentation"
+    id: wordclock_power
+  - platform: ld2410
+    engineering_mode:
+      name: "Capteur LD2410 Engineering Mode"
+      restore_mode: ALWAYS_OFF
+    bluetooth:
+      name: "Capteur LD2410 Bluetooth"
+
+select:
+  # Matrix language selector - French by default
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    select_type: language
+    name: "Langue Matrice"
+    id: wordclock_language
+
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    name: "Choix Mode Secondes"
+    id: wordclock_seconds_mode
+
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    light_type: words
+    name: "Choix Effet Mots"
+    id: wordclock_words_effect
+
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    light_type: seconds
+    name: "Choix Effet Secondes"
+    id: wordclock_seconds_effect
+
+  - platform: ld2410
+    distance_resolution:
+      name: "Capteur LD2410 Resolution"
+
+# =============================================================================
+# Effect Parameters
+# =============================================================================
+number:
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    number_type: effect_speed
+    name: "Effet Vitesse"
+    id: wordclock_effect_speed
+    unit_of_measurement: "%"
+    min_value: 0
+    max_value: 100
+    step: 1
+
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    number_type: words_effect_brightness
+    name: "Effet Luminosité Mots"
+    id: wordclock_words_effect_brightness
+    unit_of_measurement: "%"
+    min_value: 0
+    max_value: 100
+    step: 1
+
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    number_type: seconds_effect_brightness
+    name: "Effet Luminosité Secondes"
+    id: wordclock_seconds_effect_brightness
+    unit_of_measurement: "%"
+    min_value: 0
+    max_value: 100
+    step: 1
+
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    number_type: rainbow_spread
+    name: "Effet Dispersion Arc-en-ciel"
+    id: wordclock_rainbow_spread
+    unit_of_measurement: "%"
+    min_value: 0
+    max_value: 100
+    step: 1
+
+  # --- Group: TRANSITIONS ---
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    number_type: words_fade_in
+    name: "Transition Fondu Mots Entrée"
+    id: wordclock_words_fade_in
+    unit_of_measurement: "s"
+    min_value: 0.0
+    max_value: 10
+    step: 0.1
+
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    number_type: words_fade_out
+    name: "Transition Fondu Mots Sortie"
+    id: wordclock_words_fade_out
+    unit_of_measurement: "s"
+    min_value: 0.0
+    max_value: 10
+    step: 0.1
+
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    number_type: typing_delay
+    name: "Transition Délai Écriture"
+    id: wordclock_typing_delay
+    unit_of_measurement: "s"
+    min_value: 0.0
+    max_value: 0.5
+    step: 0.01
+
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    number_type: seconds_fade_out
+    name: "Transition Fondu Secondes Sortie"
+    id: wordclock_seconds_fade_out
+    unit_of_measurement: "s"
+    min_value: 0
+    max_value: 180
+    step: 1
+
+  - platform: ld2410
+    timeout:
+      name: "Capteur LD2410 Timeout Présence"
+    max_move_distance_gate:
+      name: "Capteur LD2410 Portée Mouvement"
+    max_still_distance_gate:
+      name: "Capteur LD2410 Portée Statique"
+
+# =============================================================================
+# System & Diagnostics
+# =============================================================================
+button:
+  - platform: restart
+    icon: mdi:power-cycle
+    name: "Système Redémarrer"
+    entity_category: "diagnostic"
+
+  - platform: wordclock
+    wordclock_id: my_wordclock
+    name: "Système Reset Usine"
+    icon: mdi:factory
+    entity_category: "diagnostic"
+
+binary_sensor:
+  - platform: ld2410
+    has_target:
+      name: "Capteur Présence"
+    has_moving_target:
+      name: "Capteur Présence Moving Target"
+    has_still_target:
+      name: "Capteur Présence Still Target"
+
+text_sensor:
+  - platform: ld2410
+    version:
+      name: "Capteur LD2410 Firmware Version"
+    mac_address:
+      name: "Capteur LD2410 MAC Address"
+
+sensor:
+  - platform: ld2410
+    moving_distance:
+      name : "Capteur Présence Moving Distance"
+    still_distance:
+      name: "Capteur Présence Still Distance"
+    moving_energy:
+      name: "Capteur Présence Move Energy"
+    still_energy:
+      name: "Capteur Présence Still Energy"
+    detection_distance:
+      name: "Capteur Présence Detection Distance"
+
+  - platform: template
+    name: "Système Puissance Estimée"
+    id: estimated_power
+    unit_of_measurement: "W"
+    device_class: POWER
+    accuracy_decimals: 2
+    update_interval: 30s
+    lambda: |-
+      return id(my_wordclock).get_estimated_power();
+
+  - platform: internal_temperature
+    name: "Système Température ESP"
+    unit_of_measurement: °C
+    device_class: TEMPERATURE
+    update_interval: 30s
+    entity_category: "diagnostic"
+
+  - platform: uptime
+    name: "Système Uptime"
+    id: sys_uptime
+    update_interval: 10s
+    entity_category: "diagnostic"
+
+  - platform: wifi_signal
+    name: "Système Signal WiFi dB"
+    id: wifi_signal_db
+    update_interval: 60s
+    entity_category: "diagnostic"
+    filters:
+      - sliding_window_moving_average:
+          window_size: 5
+          send_every: 5
+
+  - platform: copy
+    source_id: wifi_signal_db
+    name: "Système Signal WiFi %"
+    id: wifi_signal_percent
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "%"
+    entity_category: "diagnostic"
+
+  - platform: bh1750
+    name: "Capteur Luminosité"
+    i2c_id: bus_i2c
+    address: 0x23
+    update_interval: 1s
+    accuracy_decimals: 0
+    unit_of_measurement: lx
+    device_class: illuminance
+    state_class: measurement
+
+    filters:
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 1
+      # Smart filter with named constants
+      - lambda: |-
+          static float last_value = NAN;
+          static uint32_t last_send = 0;
+          
+          // Named constants for readability
+          const uint32_t HEARTBEAT_MS = 300000;       // 5 minutes
+          const float LOW_LUX_THRESHOLD = 50.0f;
+          const float LOW_LUX_DELTA = 5.0f;
+          const float HIGH_LUX_DELTA_PERCENT = 0.10f;
+          const float MIN_DELTA = 1.0f;
+          
+          // 1. First startup or Heartbeat
+          if (std::isnan(last_value) || (millis() - last_send > HEARTBEAT_MS)) {
+            if (std::isnan(last_value)) last_value = x;
+            last_send = millis();
+            return x;
+          }
+          
+          // Calculate absolute difference
+          float change = std::abs(x - last_value);
+          bool should_send = false;
+          
+          // 2. Low brightness: fixed delta
+          if (x < LOW_LUX_THRESHOLD) {
+            should_send = (change >= LOW_LUX_DELTA);
+          }
+          // 3. High brightness: relative delta
+          else {
+            float threshold = last_value * HIGH_LUX_DELTA_PERCENT;
+            should_send = (change >= threshold && change >= MIN_DELTA);
+          }
+          
+          // Send if threshold exceeded
+          if (should_send) {
+            last_value = x;
+            last_send = millis();
+            return x;
+          }
+          
+          // Otherwise filter
+          return {};;
